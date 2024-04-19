@@ -62,4 +62,5 @@ Um die Anwendung in einem Dockercontainer auszuführen, führe die folgenden Sch
 npm run build
 docker build -t docker-demo .
 docker run -p 3000:3000 docker-demo
+# Öffne http://localhost:3000 im Browser
 ```
