@@ -1,27 +1,28 @@
-FROM node
+# Use Ubuntu as base image
+FROM ubuntu:latest
 
-# Labels
-LABEL maintainer="Valentin Kolb <valentin.kolb@uni-ulm.de>"
-LABEL version="1.0.0"
-LABEL description="This is a sample Docker image."
+# Set labels
+LABEL authors="valentinkolb"
 
-# Set the working directory
+# RUN command during build time
+RUN echo "Container is being built..."
+
+# set the working directory for the following commands
 WORKDIR /app
 
-# Copy the package.json and package-lock.json files
-COPY package*.json ./
+# COPY command during build time
+COPY . .
 
-# Set the NODE_ENV to development
-ENV NODE_ENV development
+# set environment variable during build time
+ENV FOO=BAR
 
-# Install all dependencies
-RUN npm install
+# print environment variable during build time
+RUN echo $FOO
 
-# Copy compiled source code
-COPY out ./out
+# set the programm to be executed when the container is started
+# this can be overwritten when starting the container with the --entrypoint flag (docker run --entrypoint <programm> <image>)
+ENTRYPOINT ["echo"]
 
-# Set the NODE_ENV to production
-ENV NODE_ENV production
-
-# Start the server
-CMD ["node", "./out/app.js"]
+# set the default argument for the entrypoint
+# this can be overwritten when starting the container by simply adding the argument after the image name when starting the container (docker run <image> <argument>)
+CMD ["hallo welt"]

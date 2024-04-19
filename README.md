@@ -1,33 +1,39 @@
-# Docker Workshop
+# How To Docker
 
-## Overview
+In diesem Repo werden wir uns mit Docker beschäftigen. Wir werden uns ansehen, wie wir Dockerfiles schreiben, Images
+bauen und Container starten.
 
-Auf diesem Branch schauen wir uns an, was es für Nachteile hat, wenn wir nicht den Source Code im Dockercontainer Build Step kompilieren.
+## Übersicht
 
-<button>[Weiter zu: Build Step in Dockerfile >](https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop/-/tree/step-2)</button>
+> [!TIP]
+> Verschiedene Branches zeigen verschiedene Schritte, die wir durchgehen werden. Jeder Branch baut auf dem vorherigen
+> auf.
 
-## Beispiel Server
+1. [Einstieg](https://github.com/ValentinKolb/docker-demo/tree/main)
+2. [Ausführen einer Anwendung in einem Dockercontainer](https://github.com/ValentinKolb/docker-demo/tree/step-1)
+3. [Bauen einer Anwendung mit Docker](https://github.com/ValentinKolb/docker-demo/tree/step-2)
+4. [Multi-Stage Builds](https://github.com/ValentinKolb/docker-demo/tree/step-3)
 
-Für dieses Projekt wir ein NodeJS Server als Beispiel Anwendung genutzt. Der Webserver ist unter http://localhost:3000/ aufrufbar.
+## Einstieg
 
-## Locales Setup
+> [!TIP]
+> Installiere Docker auf deinem System, um die Beispiele auszuführen.
 
-Hierzu muss NodeJs und npm installiert werden
+Auf diesem Branch schauen wir uns eine simple Dockerfile an, um die Syntax zu verstehen.
 
-### Development SetUp
+Dabei wollen wir in dem Dockercontainer nur das Linux-Commando `echo` ausführen.
+
+Schaue dir das Dockerfile an: [Dockerfile](Dockerfile)
+
+Führe folgende Befehle aus, um das Dockerimage zu bauen und den Container zu starten:
 
 ```bash
-git clone https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop.git
-npm install
-npm run start:dev
+# Baue das Dockerimage und gebe ihm den Namen "docker-demo"
+docker build -t docker-demo .
+
+# Starte den Container mit dem gebauten Image
+docker run docker-demo
+
+# Starte den Container mit einem anderen CMD
+docker run docker-demo "Hello Docker"
 ```
-
-### Production Setup
-
-```bash
-git clone https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop.git
-npm install
-npm run build
-npm run start:prod
-```
-
