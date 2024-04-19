@@ -1,4 +1,4 @@
-# How To Docker
+![How To Docker](assets/banner.png)
 
 In diesem Repo werden wir uns mit Docker beschäftigen. Wir werden uns ansehen, wie wir Dockerfiles schreiben, Images
 bauen und Container starten.
