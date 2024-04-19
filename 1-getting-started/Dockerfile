@@ -2,7 +2,9 @@
 FROM ubuntu:latest
 
 # Set labels
-LABEL authors="valentinkolb"
+LABEL maintainer="Valentin Kolb <valentin.kolb@uni-ulm.de>"
+LABEL version="1.0.0"
+LABEL description="This is a sample Docker image."
 
 # RUN command during build time
 RUN echo "Container is being built..."

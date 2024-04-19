@@ -1,6 +1,7 @@
 # Typescript
-node_modules
-out
+sampleApp/node_modules
+sampleApp/out
+sampleApp/package-lock.json
 
 # MacOS
 .DS_Store
