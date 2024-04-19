@@ -17,8 +17,12 @@ ENV NODE_ENV development
 # Install all dependencies
 RUN npm install
 
-# Copy compiled source code
-COPY out ./out
+# Copy the source code
+COPY src ./src
+COPY tsconfig.json ./
+
+# Compile the TypeScript code
+RUN npm run build
 
 # Set the NODE_ENV to production
 ENV NODE_ENV production

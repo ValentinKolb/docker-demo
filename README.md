@@ -2,9 +2,9 @@
 
 ## Overview
 
-Auf diesem Branch schauen wir uns an, was es für Nachteile hat, wenn wir nicht den Source Code im Dockercontainer Build Step kompilieren.
+Auf diesem Branch schauen wir uns an, wie wir in der Dockerfile der Source Code kompilieren können.
 
-<button>[Weiter zu: Build Step in Dockerfile >](https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop/-/tree/step-2)</button>
+<button>[< Zurück zu: Kein Build in Dockerfile](https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop/-/tree/step-1)</button> <button>[Weiter zu: Multi Step Build in Dockerfile >](https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop/-/tree/step-3)</button>
 
 ## Beispiel Server
 
