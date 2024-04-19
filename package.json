@@ -2,9 +2,9 @@
   "name": "docker-2",
   "version": "1.0.0",
   "scripts": {
-    "build": "tsc ",
+    "build": "tsc",
     "start:dev": "npx nodemon src/app.ts",
-    "start:prod": "node out/app.js"
+    "start:prod": "node dist/app.js"
   },
   "description": "docker demo 2",
   "repository": "https://gitlab.uni-ulm.de/softwaregrundprojekt/2022-2023/gruppenprojekt/admin/docker-2.git",

@@ -2,9 +2,9 @@
 
 ## Overview
 
-Auf diesem Branch schauen wir uns an, wie wir in der Dockerfile der Source Code kompilieren können.
+Auf diesem Branch schauen wir uns an, wie wir Multi Step Dockerfiles nutzen können (auch Multi Stage genannt)
 
-<button>[< Zurück zu: Kein Build in Dockerfile](https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop/-/tree/step-1)</button> <button>[Weiter zu: Multi Step Build in Dockerfile >](https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop/-/tree/step-3)</button>
+<button>[< Zurück zu: Build Step in Dockerfile](https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop/-/tree/step-2)</button> <button>[Weiter zu: Docker Compose >](https://gitlab.uni-ulm.de/softwaregrundprojekt/2023-2024/workshops/docker-workshop/-/tree/step-4)</button>
 
 ## Beispiel Server
 
