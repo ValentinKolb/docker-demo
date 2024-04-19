@@ -329,3 +329,7 @@ $~ docker attach [CONTAINER_ID / NAME]
 # Ausführen von Befehlen in einem Container, z.B. starten eines Terminals
 $~ docker exec –it [CONTAINER_ID / NAME] /bin/bash
 ```
+
+## Dieses Repo
+
+![QR Code](assets/qr.png)
