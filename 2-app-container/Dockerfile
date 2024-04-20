@@ -24,5 +24,8 @@ COPY ../sampleApp/out ./out
 # Set the NODE_ENV to production
 ENV NODE_ENV production
 
-# Start the server
-CMD ["node", "./out/app.js"]
+# set the programm to be executed when the container is started
+ENTRYPOINT ["node"]
+
+# set the default argument for the entrypoint
+CMD ["./out/app.js"]

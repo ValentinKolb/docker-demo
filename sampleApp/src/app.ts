@@ -29,7 +29,14 @@ app.get('/env/:var', (req, res) => {
     res.send(envVar);
 })
 
+// add CTRL+C handler
+process.on('SIGINT', () => {
+    console.info('SIGINT signal received.')
+    console.log('Closing http server.')
+    process.exit(0)
+})
+
 // Start the server on port 3000
 app.listen(3000, () => {
-    console.log('Server started on port http://localhost:3000')
+    console.log('Server started on port http://0.0.0.0:3000')
 })

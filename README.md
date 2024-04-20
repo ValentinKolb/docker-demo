@@ -290,17 +290,14 @@ COPY --from=builder /app/node_modules ./node_modules
 Anschließend können wir das Dockerimage bauen und den Container starten:
 
 ```bash
-# grob die Größe des Images mit Sourcecode anzeigen
-docker inspect --size multi-stage-builds
-
 # bauen des Dockerimages mit dem Namen (aka Tag) "multi-stage-builds"
 docker build --tag "multi-stage-builds" --file 4-multi-stage-builds/Dockerfile .
 
 # starten des Containers
 docker run -p 5000:3000 multi-stage-builds
 
-# grob die Größe des finalen Images anzeigen
-docker inspect --size multi-stage-builds
+# images und deren Größe anzeigen
+docker images
 ```
 
 ## Docker Cheat Sheet
