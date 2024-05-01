@@ -1,0 +1,14 @@
+services:
+  example-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5432:3000"
+    develop:
+      watch:
+        - action: sync
+          path: ./sampleApp/public
+          target: /app/public
+        - action: rebuild
+          path: ./sampleApp/src

@@ -10,7 +10,7 @@ LABEL description="This is a sample Docker image."
 WORKDIR /app
 
 # Copy the package.json and package-lock.json files
-COPY ../sampleApp/package*.json ./
+COPY ./sampleApp/package*.json ./
 
 # Set the NODE_ENV to development
 ENV NODE_ENV development
@@ -19,7 +19,10 @@ ENV NODE_ENV development
 RUN npm install
 
 # Copy compiled source code
-COPY ../sampleApp/out ./out
+COPY ./sampleApp/out ./out
+
+# Copy public files
+COPY ./sampleApp/public ./public
 
 # Set the NODE_ENV to production
 ENV NODE_ENV production

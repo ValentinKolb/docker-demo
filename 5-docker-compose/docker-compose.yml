@@ -1,0 +1,9 @@
+services: # A list of services
+  example-app: # Service name
+    image: multi-stage-builds # Image name
+    ports: # Host-Port:Container-Port
+      - "5432:3000"
+    environment: # Environment variables
+      - "FOO=bar"
+    volumes: # Bind mount volume (host:container)
+      - ./example.html:/app/public/example.html

@@ -5,16 +5,8 @@ dotenv.config()
 
 const app = express()
 
-app.get('/', (req, res) => {
-    res.send(
-        '<h1>Example App</h1>' +
-        '<p>Try these routes:</p>' +
-        '<ul>' +
-        '<li><a href="/env">/env</a></li>' +
-        '<li><a href="/env/USER">/env/USER</a></li>' +
-        '</ul>'
-    )
-})
+// route to serve public files
+app.use(express.static('public'))
 
 // route to return all environment variables
 app.get('/env', (req, res) => {
@@ -32,7 +24,7 @@ app.get('/env/:var', (req, res) => {
 // add CTRL+C handler
 process.on('SIGINT', () => {
     console.info('SIGINT signal received.')
-    console.log('Closing http server.')
+    console.log('Closing http server. Bye!')
     process.exit(0)
 })
 

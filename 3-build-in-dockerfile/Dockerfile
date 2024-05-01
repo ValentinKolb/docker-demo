@@ -9,7 +9,7 @@ LABEL description="This is a sample Docker image."
 WORKDIR /app
 
 # Copy the package.json and package-lock.json files
-COPY ../sampleApp/package*.json ./
+COPY ./sampleApp/package*.json ./
 
 # Set the NODE_ENV to development
 ENV NODE_ENV development
@@ -18,8 +18,11 @@ ENV NODE_ENV development
 RUN npm install
 
 # Copy the source code
-COPY ../sampleApp/src ./src
-COPY ../sampleApp/tsconfig.json ./
+COPY ./sampleApp/src ./src
+COPY ./sampleApp/tsconfig.json ./
+
+# Copy public files
+COPY ./sampleApp/public ./public
 
 # Compile the TypeScript code
 RUN npm run build
