@@ -1,8 +1,11 @@
 ![How To Docker](assets/banner.png)
 
 In diesem Repo werden wir uns mit Docker beschäftigen. Wir werden uns ansehen, warum wir Docker verwenden wollen, wie
-wir Dockerfiles schreiben, Images
-bauen und Container starten.
+wir Dockerfiles schreiben, Images bauen und Container starten.
+
+Außerdem werden wir uns mit Docker Compose beschäftigen, und wie wir Docker Compose verwenden können, um schon während
+der
+Entwicklung die Anwendung in einem Dockercontainer auszuführen.
 
 ## Übersicht
 
@@ -10,14 +13,16 @@ bauen und Container starten.
 > Wir werden uns Schritt für Schritt mit Docker beschäftigen. Jeder Schritt baut auf dem vorherigen auf.
 > Für jeden Schritt gibt es einen eigenen Ordner, in dem sich ein Dockerfile befindet.
 
-1. [Getting Started - Dockerfile `./1-getting-started`](https://github.com/ValentinKolb/docker-demo/tree/main/1-getting-started)
-2. [Ausführen einer Anwendung in einem Dockercontainer `./2-app-container`](https://github.com/ValentinKolb/docker-demo/tree/main/2-app-container)
-3. [Bauen einer Anwendung mit Docker `./3-build-in-dockerfile`](https://github.com/ValentinKolb/docker-demo/tree/main/3-build-in-dockerfile)
-4. [Multi-Stage Builds `./4-multi-stage-builds`](https://github.com/ValentinKolb/docker-demo/tree/main/4-multi-stage-builds)
+0. [Warum Docker?](#warum-docker)
+1. [Einstieg - Dockerfile `./1-getting-started`](#einstieg)
+2. [Ausführen einer Anwendung in einem Dockercontainer `./2-app-container`](#ausführen-der-anwendung-in-einem-dockercontainer)
+3. [Bauen einer Anwendung mit Docker `./3-build-in-dockerfile`](#anwendung-mit-docker-bauen)
+4. [Multi-Stage Builds `./4-multi-stage-builds`](#multi-stage-builds)
+5. [Docker Compose `./5-docker-compose`, `./6-docker-compose-build`](#docker-compose)
+6. [Docker Compose für Entwicklung `./7-docker-compose-dev`](#docker-compose-für-entwicklung)
 
 Außerdem gibt es noch einen Ordner mit einer Beispielanwendung, die wir in einem Dockercontainer ausführen wollen.
-
-- [Beispielanwendung `./sampleApp`](https://github.com/ValentinKolb/docker-demo/tree/main/sampleApp)
+Diese Anwendung liegt jeweils in den Ordnern im Unterordner `sampleApp` (zum Beispiel `./2-app-container/sampleApp`).
 
 ## Warum Docker?
 
@@ -68,13 +73,13 @@ skalieren.
 
 Mit dem folgenden Befehl können wir einen Container starten:
 
-<pre>
+```bash
 $ docker run \
- -v <span style="color:#FAA21A">/host/foo/file:/container/bar/file</span> \
- –p <span style="color:#ED1846">3000:5432</span> \
- —name <span style="color: #117E3F">name_of_container</span> \
- tag_of_image 
-</pre>
+ -v /host/foo/file:/container/bar/file \
+ –p 3000:5000 \
+ —name name_of_container \
+ tag_of_image
+```
 
 ### Wie komme ich zu einem Docker Container?
 
@@ -109,18 +114,19 @@ an: [Dockerfile](https://github.com/ValentinKolb/docker-demo/blob/main/1-getting
 Führe folgende Befehle aus, um das Dockerimage zu bauen und den Container zu starten:
 
 ```bash
-
+# clonen dieses Repositories
 git clone https://github.com/ValentinKolb/docker-demo.git
 
+# in den Ordner wechseln
 cd docker-demo/1-getting-started
 
-# Baue das Dockerimage und gebe ihm den Namen "getting-started"
+# bauen des Dockerimages mit dem Namen "getting-started"
 docker build -t "getting-started" .
 
-# Starte den Container mit dem gebauten Image
+# starten des Containers
 docker run getting-started
 
-# Starte den Container mit einem anderen CMD
+# starten des Containers mit angegebenem Argument
 docker run getting-started "Hello Docker"
 ```
 
@@ -142,7 +148,7 @@ Die Anwendung rendert eine einfache Webseite und bietet HTTP-Endpunkte für das 
 Die Anwendung bietet drei Befehle:
 
 - `npm run start:dev`: Startet die Anwendung im Entwicklungsmodus.
-- `npm run build`: Kompiliert die Anwendung von Typescript in Javascript.
+- `npm run build`: **Kompiliert** die Anwendung von Typescript in Javascript.
 - `npm run start:prod`: Startet die kompilierte Anwendung.
 
 ### Ausführen der Anwendung lokal
@@ -150,12 +156,13 @@ Die Anwendung bietet drei Befehle:
 Folgende Befehle führen die Anwendung im Entwicklungsmodus aus:
 
 ```bash
-cd sampleApp
+# in den Ordner wechseln
+cd 2-app-container/sampleApp
 
-# Installieren der Abhängigkeiten
+# installieren der Abhängigkeiten
 npm install
 
-# Starten der Anwendung im Entwicklungsmodus
+# starten der Anwendung im Entwicklungsmodus
 npm run start:dev
 ```
 
@@ -164,12 +171,13 @@ npm run start:dev
 Folgende Befehle kompilieren die Anwendung und führen sie lokal aus:
 
 ```bash
+# in den Ordner wechseln
 cd sampleApp
 
-# Kompilieren der Anwendung
-npm run build
+# kompilieren der Anwendung
+npm run build # dieser Befehl funktioniert nur, wenn `npm install` bereits ausgeführt wurde
 
-# Starten der kompilierten Anwendung
+# starten der kompilierten Anwendung
 npm run start:prod
 ```
 
@@ -201,7 +209,7 @@ Danach kann das Dockerimage gebaut und der Container gestartet werden:
 cd 2-app-container
 
 # bauen des Dockerimages mit dem Namen (aka Tag) "app-container"
-# Achtung: Dieser Befehl funktioniert nur, wenn `npm install` und `npm run build` bereits ausgeführt wurden
+# Achtung: Dieser Befehl funktioniert nur, wenn `npm install` und `npm run build` bereits ausgeführt wurden, dies beheben wir im nächsten Schritt
 docker build --tag "app-container" .
 
 # starten des Containers
@@ -317,16 +325,22 @@ docker images
 
 ### Einführung
 
-> [!NOTE] Mit Docker Compose können wir mehrere Container gleichzeitig starten und konfigurieren.
+> [!NOTE]
+> In diesem Schritt wollen wir Docker Compose verwenden, um den Container zu starten.
+
+> [!TIP]
+> Docker Compose ist Teil von Docker und wird automatisch installiert, wenn Docker installiert wird.
 
 **Was ist Docker Compose?**
 
 Docker Compose ist ein Tool zur Definition und Ausführung von Docker-Anwendungen mit mehreren Containern.
+Dabei wird der Anwendungsstack in einer einzigen Datei definiert, der `docker-compose.yml`. So müssen
+nicht alle Befehle manuell in der Konsole eingegeben werden.
 
 **Warum Docker Compose verwenden?**
 
 * Vereinfacht die Verwaltung von Multi-Container-Anwendungen.
-* Definiert den Anwendungs-Stack in einer einzigen Datei.
+* Definiert den Anwendungsstack in einer einzigen Datei.
 * Erleichtert die Skalierung und Aktualisierung von Diensten.
 
 **Vergleich von Docker Compose mit herkömmlichem Docker**
@@ -334,13 +348,10 @@ Docker Compose ist ein Tool zur Definition und Ausführung von Docker-Anwendunge
 * Docker: Einzelne Containerverwaltung.
 * Docker Compose: Orchestrierung von Multi-Container-Anwendungen.
 
-**Zusammenfassung**
-
-Docker Compose ist ein leistungsstarkes Werkzeug zur Verwaltung von Multi-Container-Anwendungen.
-
 ### Docker Compose Beispiel
 
-> [!TIP] In diesem Schritt wollen wir Docker Compose verwenden, das im letzten Schritt erstellte Dockerimage zu starten.
+> [!NOTE]
+> In diesem Schritt wollen wir Docker Compose verwenden, das im letzten Schritt erstellte Dockerimage zu starten.
 
 Dazu schauen wir uns die `docker-compose.yml`
 an: [docker-compose.yml](https://github.com/ValentinKolb/docker-demo/blob/main/5-docker-compose/docker-compose.yml)
@@ -377,19 +388,26 @@ docker compose up
 ```
 
 Da wir über die Umgebungsvariable `FOO=bar` verfügen, können wir die Umgebungsvariable auf der Webseite
-sehen: [http://localhost:5432/env/FOO](http://localhost:5432/env/FOO)
+der Beispielanwendung sehen: [http://localhost:5432/env/FOO](http://localhost:5432/env/FOO)
 
-Außerdem können wir die Datei `example.html` im Browser
+Außerdem können wir als per Bind-Mount gemountete die Datei `example.html` im Browser
 sehen: [http://localhost:5432/example.html](http://localhost:5432/example.html)
 
 ### Docker Compose mit Build
 
-> [!NOTE] In diesem Schritt wollen wir Docker Compose verwenden, um den Docker Container zu bauen und zu starten.
+> [!NOTE]
+> In diesem Schritt wollen wir Docker Compose verwenden, um den Docker Container zu bauen und zu starten.
+
+> [!TIP]
+> Docker Images können auch direkt in Docker Compose gebaut werden. Dies sollte jedoch nur für die Entwicklung
+> verwendet werden.
+> Für Produktion sollte das Dockerimage z.B. in einer Pipeline gebaut und dann über eine Registry bereitgestellt werden.
 
 **Was ist der Unterschied?**
 
-Bisher haben wir das Dockerimage manuell gebaut und dann den Container mithilfe von Docker Compose gestartet.
-Jetzt wollen wir Docker Compose verwenden, um das Dockerimage zu bauen und den Container zu starten.
+Bisher haben wir das Dockerimage manuell mit `docker build ...` gebaut und dann den Container mithilfe von Docker
+Compose gestartet.
+Jetzt wollen wir Docker Compose verwenden, um direkt das Dockerimage zu bauen und dann den Container zu starten.
 
 Dazu schauen wir uns die `docker-compose.yml`
 an: [docker-compose.yml](https://github.com/ValentinKolb/docker-demo/blob/main/6-docker-compose-build/docker-compose.yml)
@@ -401,7 +419,7 @@ services:
   example-app:
 -    image: multi-stage-builds
 +    build:
-+      context: 4-multi-stage-builds
++      context: .
 +      dockerfile: Dockerfile
 ```
 
@@ -424,7 +442,8 @@ docker compose up --build --force-recreate
 
 ### Docker Compose für Entwicklung
 
-> [!NOTE] In diesem Schritt wollen wir Docker Compose verwenden, um die Anwendung schon während der Entwicklung
+> [!NOTE]
+> In diesem Schritt wollen wir Docker Compose verwenden, um die Anwendung schon während der Entwicklung
 > in einem Dockercontainer auszuführen. Dazu soll der Container bei Änderungen am Sourcecode automatisch neu gebaut
 > und gestartet werden.
 
