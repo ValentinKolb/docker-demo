@@ -8,3 +8,6 @@
 
 # Jetbrains
 .idea
+
+# any env.local files
+.env.local

@@ -20,9 +20,11 @@ Entwicklung die Anwendung in einem Dockercontainer auszuführen.
 4. [Multi-Stage Builds `./4-multi-stage-builds`](#multi-stage-builds)
 5. [Docker Compose `./5-docker-compose`, `./6-docker-compose-build`](#docker-compose)
 6. [Docker Compose für Entwicklung `./7-docker-compose-dev`](#docker-compose-für-entwicklung)
+7. [Traefik `./8-traefik`](#traefik)
+8. [Docker Cheat Sheet](#docker-cheat-sheet)
 
-Außerdem gibt es noch einen Ordner mit einer Beispielanwendung, die wir in einem Dockercontainer ausführen wollen.
-Diese Anwendung liegt jeweils in den Ordnern im Unterordner `sampleApp` (zum Beispiel `./2-app-container/sampleApp`).
+Bei den Schritten wo wir eine Beispielanwendung verwenden, handelt es sich um eine einfache Node.js-Anwendung (Typescript).
+Diese Anwendung liegt jeweils in den Ordnern in einem Unterordner (`sampleApp`, z.B. `./2-app-container/sampleApp`).
 
 ## Warum Docker?
 
@@ -489,6 +491,78 @@ cd 7-docker-compose-dev
 
 # starten des Containers im Watch-Modus
 docker compose watch # oder docker compose up --watch
+```
+
+## Traefik
+
+> [!NOTE]
+> In diesem Schritt wollen wir Traefik verwenden, um HTTP Requests an die Anwendung in einem Dockercontainer zu routen.
+
+### Was ist ein Reverse Proxy?
+
+Ein Reverse Proxy ist ein Server, der Anfragen von Clients entgegennimmt und sie an die entsprechenden Server
+weiterleitet.
+So können mehrere Webanwendungen auf einem Server ausgeführt werden, ohne dass sie sich gegenseitig beeinflussen.
+
+#### Generelle Aufgaben eines Reverse Proxys
+
+- **Routing**: Leitet Anfragen an die entsprechenden Server weiter.
+- **Load Balancing**: Verteilt Anfragen auf mehrere Server.
+- **SSL Termination**: Entschlüsselt SSL-Verkehr und leitet ihn an die Server weiter.
+- **Caching**: Speichert häufig angeforderte Ressourcen, um die Antwortzeit zu verbessern.
+- **Sicherheit**: Schützt die Server vor Angriffen und überwacht den Datenverkehr.
+- **Logging**: Protokolliert den Datenverkehr für die Analyse und Überwachung.
+- **Monitoring**: Überwacht die Server und benachrichtigt bei Ausfällen.
+
+### Was ist Traefik?
+
+Traefik ist ein moderner Reverse Proxy, der speziell für Containerumgebungen entwickelt wurde. Er ist einfach zu
+konfigurieren und bietet viele Funktionen, die für Containerumgebungen nützlich sind.
+
+### Aufbau von Traefik
+
+![traefik components](/assets/traefik.png)
+
+> [!TIP]
+> Traefik besteht aus mehreren Komponenten, die zusammenarbeiten, um den Datenverkehr zu routen.
+
+- **Entrypoints**: Definieren die Ports, auf denen Traefik Anfragen entgegennimmt.
+    - HTTP: Port 80
+    - HTTPS: Port 443
+- **Routers**: Leiten Anfragen an die entsprechenden Dienste weiter.
+    - z.B. `example.com` → Docker-Container `example-app`
+- **Services**: Definieren die Dienste, die von Traefik geroutet werden.
+    - z.B. Docker-Container `example-app`
+- **Middlewares**: Definieren die Middleware, die auf die Anfragen angewendet werden soll.
+    - z.B. SSL-Termination, Authentifizierung
+
+#### Zusätzliche Komponenten
+
+> [!TIP]
+> Traefik bietet zusätzliche Komponenten, die die Funktionalität erweitern, allerdings nicht direkt mit dem Routing
+> zusammenhängen.
+
+- **Providers**: Definieren die Quelle der Konfiguration (z.B. Docker, Kubernetes).
+    - z.B. Docker-Provider (Docker Labels), Kubernetes-Provider, File-Provider (`.yml` und `.toml`)
+- **Web-Dashboard**: Zeigt die Konfiguration und den Status von Traefik an.
+- **Plugins**: Erweitern die Funktionalität von Traefik und können selbst entwickelt werden (Golang)
+    - z.B. Let's Encrypt (SSL Zertifikate), Prometheus (Monitoring), Consul (Service Discovery), ...
+
+### Traefik Beispiel
+
+> [!NOTE]
+> In diesem Schritt wollen wir Traefik verwenden, um HTTP Requests an die Anwendung in einem Dockercontainer zu routen.
+
+Dazu schauen wir uns die `docker-compose.yml` an: [docker-compose.yml](./8-traefik/docker-compose.yml)
+
+Um die Anwendung und Traefik zu starten, führen wir folgende Befehle aus:
+
+```bash
+# wechseln in den Ordner
+cd 8-traefik
+
+# starten der Container
+docker compose up
 ```
 
 ## Docker Cheat Sheet

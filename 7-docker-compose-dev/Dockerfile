@@ -1,4 +1,3 @@
-# First stage: builder
 FROM node AS builder
 
 # Set the working directory

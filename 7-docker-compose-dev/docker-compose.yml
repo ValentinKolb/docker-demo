@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5432:3000"
+      - "5443:3000"
     develop:
       watch:
         - action: sync

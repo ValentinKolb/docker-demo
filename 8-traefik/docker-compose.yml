@@ -1,0 +1,66 @@
+services:
+
+  traefik:
+    image: traefik:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    command:
+      # global setting
+      - --global.checkNewVersion=true
+      - --global.sendAnonymousUsage=true
+      - --log.level=INFO
+      - --api
+      - --ping
+
+      # http entrypoint (!! automatic redirect to https://)
+      - --entryPoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+
+      # https entrypoint
+      - --entryPoints.websecure.address=:443
+
+      # lets encrypt with http challenge
+      - --certificatesresolvers.http_resolver.acme.tlschallenge=true
+      - --certificatesresolvers.http_resolver.acme.email=mail@valentin-kolb.com
+      - --certificatesresolvers.http_resolver.acme.storage=/http_resolver/acme.json
+
+      # docker dyn provider
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.watch=true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock # docker socket for docker provider
+      - ./traefik_data/http_resolver:/http_resolver # consistent storage for let's encrypt certificates with http challenge
+    labels:
+      - "traefik.enable=true"
+
+      # Traefik Web Status Page
+      - "traefik.http.routers.traefik_https.rule=Host(`traefik.docker-demo.de`)"
+      - "traefik.http.routers.traefik_https.entrypoints=websecure"
+      - "traefik.http.routers.traefik_https.tls=true"
+      - "traefik.http.routers.traefik_https.tls.certResolver=http_resolver"
+      - "traefik.http.routers.traefik_https.service=api@internal"
+
+  # an example app
+  whoami:
+    image: "traefik/whoami" # this container response to HTTP GET Request with an echo
+    container_name: "example-app" # name the container
+    # expose:
+    # since traefik routs this container, nothing must be exposed
+    labels:
+      # tell traefik to route this container
+      - "traefik.enable=true"
+
+      # declare routing rule
+      - "traefik.http.routers.example-app.rule=Host(`whoami.docker-demo.de`)"
+      # declare entrypoint
+      - "traefik.http.routers.example-app.entrypoints=websecure"
+      # use tls (SSL)
+      - "traefik.http.routers.example-app.tls=true"
+      # use let's encrypt to automatically get SSL-cert
+      - "traefik.http.routers.example-app.tls.certResolver=http_resolver"
+
+      # tell traefik the internal port of the container
+      - "traefik.http.services.example-app.loadbalancer.server.port=80"

@@ -8,6 +8,10 @@ const app = express()
 // route to serve public files
 app.use(express.static('public'))
 
+app.get('/test', (req, res) => {
+    res.send('Hallo Welt!')
+})
+
 // route to return all environment variables
 app.get('/env', (req, res) => {
     res.send(process.env)
